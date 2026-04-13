@@ -1,0 +1,52 @@
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import authRoutes from "./routes/auth.routes.js";
+import productRoutes from "./routes/product.routes.js";
+
+const app = express();
+const port = Number(process.env.PORT || 5000);
+const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:8080";
+const configuredOrigins = frontendOrigin.split(",").map((o) => o.trim()).filter(Boolean);
+
+app.use(helmet());
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    const isLocalhost = /^https?:\/\/localhost:\d+$/.test(origin);
+    if (isLocalhost || configuredOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error("Not allowed by CORS"));
+  },
+}));
+app.use(express.json());
+app.use(morgan("dev"));
+
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true, service: "smartshelf-backend", timestamp: new Date().toISOString() });
+});
+
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+
+app.use((_req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
+
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(500).json({ message: "Internal server error" });
+});
+
+app.listen(port, () => {
+  console.log(`SmartShelf backend running on http://localhost:${port}`);
+});
