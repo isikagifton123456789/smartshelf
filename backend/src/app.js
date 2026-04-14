@@ -8,8 +8,16 @@ import productRoutes from "./routes/product.routes.js";
 
 const app = express();
 const port = Number(process.env.PORT || 5000);
-const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:8080,https://smartshelf-swart.vercel.app/";
-const configuredOrigins = frontendOrigin.split(",").map((o) => o.trim()).filter(Boolean);
+const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:8080,https://smartshelf-swart.vercel.app";
+
+function normalizeOrigin(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
+}
+
+const configuredOrigins = frontendOrigin
+  .split(",")
+  .map((o) => normalizeOrigin(o))
+  .filter(Boolean);
 
 app.use(helmet());
 app.use(cors({
@@ -19,8 +27,10 @@ app.use(cors({
       return;
     }
 
-    const isLocalhost = /^https?:\/\/localhost:\d+$/.test(origin);
-    if (isLocalhost || configuredOrigins.includes(origin)) {
+    const normalizedOrigin = normalizeOrigin(origin);
+    const isLocalhost = /^https?:\/\/localhost:\d+$/.test(normalizedOrigin);
+
+    if (isLocalhost || configuredOrigins.includes(normalizedOrigin)) {
       callback(null, true);
       return;
     }

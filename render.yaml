@@ -12,7 +12,7 @@ services:
       - key: PORT
         value: 10000
       - key: FRONTEND_ORIGIN
-        value: https://smartshelf-frontend.onrender.com
+        value: https://smartshelf-swart.vercel.app,https://smartshelf-frontend.onrender.com
       - key: FIREBASE_WEB_API_KEY
         sync: false
       - key: FIREBASE_PROJECT_ID
