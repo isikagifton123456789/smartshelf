@@ -8,7 +8,7 @@ import productRoutes from "./routes/product.routes.js";
 
 const app = express();
 const port = Number(process.env.PORT || 5000);
-const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:8080";
+const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:8080,https://smartshelf-swart.vercel.app/";
 const configuredOrigins = frontendOrigin.split(",").map((o) => o.trim()).filter(Boolean);
 
 app.use(helmet());
