@@ -3,6 +3,7 @@ import { db, serverTimestamp } from "../config/firebaseAdmin.js";
 import { requireAuth } from "../middlewares/auth.js";
 
 const router = express.Router();
+const allowedQuantityUnits = new Set(["pcs", "kg", "g", "l", "ml"]);
 
 function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
@@ -52,10 +53,15 @@ router.get("/", requireAuth, async (req, res) => {
 
 router.post("/", requireAuth, async (req, res) => {
   try {
-    const { name, quantity, expiryDate, supplier } = req.body;
+    const { name, quantity, quantityUnit, expiryDate, supplier } = req.body;
+    const normalizedUnit = String(quantityUnit || "pcs").trim().toLowerCase();
 
     if (!name || !expiryDate || !supplier || !Number.isFinite(Number(quantity)) || Number(quantity) <= 0) {
       return res.status(400).json({ message: "name, quantity, expiryDate and supplier are required" });
+    }
+
+    if (!allowedQuantityUnits.has(normalizedUnit)) {
+      return res.status(400).json({ message: "quantityUnit must be one of: pcs, kg, g, l, ml" });
     }
 
     const profile = await getUserProfile(req.user.uid);
@@ -66,6 +72,7 @@ router.post("/", requireAuth, async (req, res) => {
     const payload = {
       name: String(name).trim(),
       quantity: Number(quantity),
+      quantityUnit: normalizedUnit,
       expiryDate: String(expiryDate),
       supplier: String(supplier).trim(),
       supplierNormalized: normalizeText(supplier),
@@ -95,10 +102,15 @@ router.post("/", requireAuth, async (req, res) => {
 router.put("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, quantity, expiryDate, supplier } = req.body;
+    const { name, quantity, quantityUnit, expiryDate, supplier } = req.body;
+    const normalizedUnit = String(quantityUnit || "pcs").trim().toLowerCase();
 
     if (!name || !expiryDate || !supplier || !Number.isFinite(Number(quantity)) || Number(quantity) <= 0) {
       return res.status(400).json({ message: "name, quantity, expiryDate and supplier are required" });
+    }
+
+    if (!allowedQuantityUnits.has(normalizedUnit)) {
+      return res.status(400).json({ message: "quantityUnit must be one of: pcs, kg, g, l, ml" });
     }
 
     const profile = await getUserProfile(req.user.uid);
@@ -122,6 +134,7 @@ router.put("/:id", requireAuth, async (req, res) => {
     const updates = {
       name: String(name).trim(),
       quantity: Number(quantity),
+      quantityUnit: normalizedUnit,
       expiryDate: String(expiryDate),
       supplier: String(supplier).trim(),
       supplierNormalized: normalizeText(supplier),

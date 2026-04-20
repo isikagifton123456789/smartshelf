@@ -1,7 +1,7 @@
-import { AlertTriangle, Clock, PackageMinus } from "lucide-react";
+import { AlertTriangle, BellRing, Clock, PackageMinus } from "lucide-react";
 
 interface NotificationItemProps {
-  type: "expiry" | "expired" | "lowStock";
+  type: "expiry" | "expired" | "lowStock" | "activity";
   message: string;
 }
 
@@ -9,6 +9,7 @@ const config = {
   expiry: { icon: Clock, style: "status-warning", border: "border-status-warning/30" },
   expired: { icon: AlertTriangle, style: "status-danger", border: "border-status-danger/30" },
   lowStock: { icon: PackageMinus, style: "status-danger", border: "border-status-danger/30" },
+  activity: { icon: BellRing, style: "bg-primary/10 text-primary", border: "border-primary/30" },
 };
 
 export default function NotificationItem({ type, message }: NotificationItemProps) {

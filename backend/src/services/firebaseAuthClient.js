@@ -41,6 +41,15 @@ export async function signInWithEmailAndPassword(email, password) {
   });
 }
 
+export async function signInWithGoogleIdToken(idToken) {
+  return identityToolkitRequest("accounts:signInWithIdp", {
+    postBody: `id_token=${encodeURIComponent(idToken)}&providerId=google.com`,
+    requestUri: "https://smartshelf.app/auth/google",
+    returnSecureToken: true,
+    returnIdpCredential: true,
+  });
+}
+
 export async function sendPasswordResetEmail(email) {
   return identityToolkitRequest("accounts:sendOobCode", {
     requestType: "PASSWORD_RESET",

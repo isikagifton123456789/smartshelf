@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LogIn, ShieldCheck } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, googleAuth } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [role, setRole] = useState<UserRole>("shopkeeper");
@@ -28,6 +29,21 @@ export default function Login() {
       navigate("/");
     } else {
       toast.error("Invalid credentials or role. Please try again.");
+    }
+  };
+
+  const handleGoogleSuccess = async (credential?: string) => {
+    if (!credential) {
+      toast.error("Google authentication failed.");
+      return;
+    }
+
+    const ok = await googleAuth(credential, role);
+    if (ok) {
+      toast.success("Logged in with Google");
+      navigate("/");
+    } else {
+      toast.error("Google login failed or role mismatch.");
     }
   };
 
@@ -66,6 +82,21 @@ export default function Login() {
           <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
             <LogIn className="h-4 w-4" /> Login
           </button>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={(response) => handleGoogleSuccess(response.credential)}
+              onError={() => toast.error("Google authentication failed.")}
+              theme="outline"
+              size="large"
+              shape="pill"
+              text="signin_with"
+            />
+          </div>
           <div className="flex items-center justify-between text-sm">
             <Link to="/forgot-password" className="text-primary hover:underline">Forgot Password?</Link>
             <Link to="/register" className="text-primary hover:underline">Create Account</Link>

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserPlus, ShieldCheck } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export default function Register() {
-  const { register } = useAuth();
+  const { register, googleAuth } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", phoneNumber: "", password: "", confirmPassword: "" });
   const [role, setRole] = useState<UserRole>("shopkeeper");
@@ -32,6 +33,26 @@ export default function Register() {
       navigate("/login", { replace: true });
     } else {
       toast.error(result.message || "Could not create account. This email may already be in use.");
+    }
+  };
+
+  const handleGoogleSuccess = async (credential?: string) => {
+    if (!credential) {
+      toast.error("Google authentication failed.");
+      return;
+    }
+
+    if (form.phoneNumber.trim() && !/^\+?[0-9]{7,15}$/.test(form.phoneNumber.trim())) {
+      toast.error("Invalid phone number format");
+      return;
+    }
+
+    const ok = await googleAuth(credential, role, form.phoneNumber.trim());
+    if (ok) {
+      toast.success("Google account linked successfully.");
+      navigate("/");
+    } else {
+      toast.error("Google sign-up failed or role mismatch.");
     }
   };
 
@@ -85,6 +106,21 @@ export default function Register() {
           <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
             <UserPlus className="h-4 w-4" /> Create Account
           </button>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={(response) => handleGoogleSuccess(response.credential)}
+              onError={() => toast.error("Google authentication failed.")}
+              theme="outline"
+              size="large"
+              shape="pill"
+              text="signup_with"
+            />
+          </div>
           <p className="text-center text-sm text-muted-foreground">
             Already have an account? <Link to="/login" className="text-primary hover:underline">Login</Link>
           </p>

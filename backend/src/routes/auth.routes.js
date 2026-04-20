@@ -1,6 +1,6 @@
 import express from "express";
 import { auth, db, serverTimestamp } from "../config/firebaseAdmin.js";
-import { signInWithEmailAndPassword, signUpWithEmailAndPassword } from "../services/firebaseAuthClient.js";
+import { signInWithEmailAndPassword, signInWithGoogleIdToken, signUpWithEmailAndPassword } from "../services/firebaseAuthClient.js";
 import { sendForgotPasswordEmail, sendVerificationEmail } from "../services/mailer.js";
 
 const router = express.Router();
@@ -138,6 +138,80 @@ router.post("/login", async (req, res) => {
     }
 
     return res.status(500).json({ message: "Login failed", error: message });
+  }
+});
+
+router.post("/google", async (req, res) => {
+  try {
+    const { idToken, role, phoneNumber } = req.body;
+
+    if (!idToken || !role) {
+      return res.status(400).json({ message: "idToken and role are required" });
+    }
+
+    if (!allowedRoles.has(role)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    if (phoneNumber && !/^\+?[0-9]{7,15}$/.test(String(phoneNumber).trim())) {
+      return res.status(400).json({ message: "Invalid phone number format" });
+    }
+
+    const signInResult = await signInWithGoogleIdToken(String(idToken));
+    const decoded = await auth.verifyIdToken(signInResult.idToken);
+    const uid = decoded.uid;
+
+    const profileRef = db.collection("users").doc(uid);
+    const profileSnap = await profileRef.get();
+
+    const fallbackName = String(decoded.name || signInResult.displayName || "User").trim();
+    const fallbackEmail = String(decoded.email || signInResult.email || "").trim().toLowerCase();
+
+    if (!profileSnap.exists) {
+      await auth.setCustomUserClaims(uid, { role });
+
+      await profileRef.set({
+        name: fallbackName,
+        email: fallbackEmail,
+        role,
+        phoneNumber: String(phoneNumber || "").trim(),
+        emailVerified: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+
+    const profileData = (await profileRef.get()).data() || {};
+    const storedRole = profileData.role || decoded.role || decoded.claims?.role;
+
+    if (storedRole !== role) {
+      return res.status(403).json({ message: "Role mismatch" });
+    }
+
+    await auth.setCustomUserClaims(uid, { role: storedRole });
+    await profileRef.set({
+      name: String(profileData.name || fallbackName),
+      email: String(profileData.email || fallbackEmail),
+      phoneNumber: String(profileData.phoneNumber || phoneNumber || "").trim(),
+      emailVerified: true,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+
+    return res.json({
+      user: {
+        id: uid,
+        name: String(profileData.name || fallbackName),
+        email: String(profileData.email || fallbackEmail),
+        role: storedRole,
+        phoneNumber: String(profileData.phoneNumber || phoneNumber || ""),
+      },
+      token: signInResult.idToken,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Google authentication failed",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 });
 

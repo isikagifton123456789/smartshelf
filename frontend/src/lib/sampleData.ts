@@ -2,11 +2,16 @@ export interface Product {
   id: string;
   name: string;
   quantity: number;
+  quantityUnit?: QuantityUnit;
   expiryDate: string;
   supplier: string;
   createdByName?: string;
   createdByPhone?: string;
 }
+
+export type QuantityUnit = "pcs" | "kg" | "g" | "l" | "ml";
+
+export const QUANTITY_UNITS: QuantityUnit[] = ["pcs", "kg", "g", "l", "ml"];
 
 const today = new Date();
 const addDays = (d: Date, n: number) => {
@@ -46,3 +51,8 @@ export function getDaysUntilExpiry(expiryDate: string): number {
 }
 
 export const LOW_STOCK_THRESHOLD = 5;
+
+export function formatQuantity(quantity: number, unit?: QuantityUnit | string): string {
+  const normalized = String(unit || "pcs").toLowerCase();
+  return `${quantity} ${normalized}`;
+}

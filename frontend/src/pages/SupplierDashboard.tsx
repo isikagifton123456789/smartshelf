@@ -5,9 +5,39 @@ import { getExpiryStatus, getDaysUntilExpiry, LOW_STOCK_THRESHOLD } from "@/lib/
 import SummaryCard from "@/components/SummaryCard";
 import { toast } from "sonner";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
 export default function SupplierDashboard() {
   const { user } = useAuth();
   const { products } = useProducts();
+
+  const sendProductActionNotification = async (productId: string, action: "restock" | "acknowledge", productName: string) => {
+    if (!user?.token) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications/product-action`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ productId, action }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.message || "Failed to send notification");
+      }
+
+      if (action === "restock") {
+        toast.success(`Restock update sent to shopkeeper for ${productName}`);
+      } else {
+        toast.success(`Acknowledgement sent to shopkeeper for ${productName}`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send notification");
+    }
+  };
 
   // Supplier sees all products (simulated — in real app, filtered by supplier)
   const supplied = products;
@@ -53,10 +83,10 @@ export default function SupplierDashboard() {
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass}`}>{statusLabel}</span>
                   </td>
                   <td className="px-4 py-3 flex gap-2">
-                    <button onClick={() => toast.info(`Restock request sent for ${p.name}`)} className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors">
+                    <button onClick={() => sendProductActionNotification(p.id, "restock", p.name)} className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors">
                       <RotateCcw className="h-3 w-3" /> Restock
                     </button>
-                    <button onClick={() => toast.success(`Acknowledged: ${p.name}`)} className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors">
+                    <button onClick={() => sendProductActionNotification(p.id, "acknowledge", p.name)} className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors">
                       <CheckCircle className="h-3 w-3" /> Acknowledge
                     </button>
                   </td>

@@ -2,18 +2,20 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PackagePlus } from "lucide-react";
 import { useProducts } from "@/context/ProductContext";
+import { QUANTITY_UNITS, type QuantityUnit } from "@/lib/sampleData";
 import { toast } from "sonner";
 
 export default function AddProduct() {
   const { addProduct } = useProducts();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", quantity: "", expiryDate: "", supplier: "" });
+  const [form, setForm] = useState({ name: "", quantity: "", quantityUnit: "pcs" as QuantityUnit, expiryDate: "", supplier: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = "Product name is required";
     if (!form.quantity || Number(form.quantity) <= 0) e.quantity = "Valid quantity is required";
+    if (!QUANTITY_UNITS.includes(form.quantityUnit)) e.quantityUnit = "Valid quantity unit is required";
     if (!form.expiryDate) e.expiryDate = "Expiry date is required";
     if (!form.supplier.trim()) e.supplier = "Supplier name is required";
     setErrors(e);
@@ -24,7 +26,13 @@ export default function AddProduct() {
     e.preventDefault();
     if (!validate()) return;
     try {
-      await addProduct({ name: form.name.trim(), quantity: Number(form.quantity), expiryDate: form.expiryDate, supplier: form.supplier.trim() });
+      await addProduct({
+        name: form.name.trim(),
+        quantity: Number(form.quantity),
+        quantityUnit: form.quantityUnit,
+        expiryDate: form.expiryDate,
+        supplier: form.supplier.trim(),
+      });
       toast.success("Product added successfully!");
       navigate("/");
     } catch {
@@ -49,8 +57,27 @@ export default function AddProduct() {
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-card-foreground">Quantity</label>
-          <input type="number" min="1" className={inputClass("quantity")} placeholder="e.g. 24" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+          <div className="grid grid-cols-3 gap-2">
+            <input
+              type="number"
+              min="1"
+              className={`${inputClass("quantity")} col-span-2`}
+              placeholder="e.g. 24"
+              value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+            />
+            <select
+              className={inputClass("quantityUnit")}
+              value={form.quantityUnit}
+              onChange={(e) => setForm({ ...form, quantityUnit: e.target.value as QuantityUnit })}
+            >
+              {QUANTITY_UNITS.map((unit) => (
+                <option key={unit} value={unit}>{unit}</option>
+              ))}
+            </select>
+          </div>
           {errors.quantity && <p className="mt-1 text-xs text-status-danger">{errors.quantity}</p>}
+          {errors.quantityUnit && <p className="mt-1 text-xs text-status-danger">{errors.quantityUnit}</p>}
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-card-foreground">Expiry Date</label>

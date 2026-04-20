@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { Product, getExpiryStatus } from "@/lib/sampleData";
+import { Product, QUANTITY_UNITS, type QuantityUnit, getExpiryStatus } from "@/lib/sampleData";
 import { useProducts } from "@/context/ProductContext";
 import { toast } from "sonner";
 import StatusBadge from "./StatusBadge";
@@ -14,7 +14,7 @@ export default function ProductTable({ products }: ProductTableProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "good" | "warning" | "expired">("all");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", quantity: "", expiryDate: "", supplier: "" });
+  const [editForm, setEditForm] = useState({ name: "", quantity: "", quantityUnit: "pcs" as QuantityUnit, expiryDate: "", supplier: "" });
 
   const filtered = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -29,6 +29,7 @@ export default function ProductTable({ products }: ProductTableProps) {
     setEditForm({
       name: product.name,
       quantity: String(product.quantity),
+      quantityUnit: (product.quantityUnit || "pcs") as QuantityUnit,
       expiryDate: product.expiryDate,
       supplier: product.supplier,
     });
@@ -36,7 +37,7 @@ export default function ProductTable({ products }: ProductTableProps) {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditForm({ name: "", quantity: "", expiryDate: "", supplier: "" });
+    setEditForm({ name: "", quantity: "", quantityUnit: "pcs", expiryDate: "", supplier: "" });
   };
 
   const saveEdit = async (id: string) => {
@@ -49,6 +50,7 @@ export default function ProductTable({ products }: ProductTableProps) {
       await updateProduct(id, {
         name: editForm.name.trim(),
         quantity: Number(editForm.quantity),
+        quantityUnit: editForm.quantityUnit,
         expiryDate: editForm.expiryDate,
         supplier: editForm.supplier.trim(),
       });
@@ -136,16 +138,27 @@ export default function ProductTable({ products }: ProductTableProps) {
                   </td>
                   <td className="px-4 py-3 text-center">
                     {editingId === p.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        value={editForm.quantity}
-                        onChange={(e) => setEditForm((prev) => ({ ...prev, quantity: e.target.value }))}
-                        className="h-8 w-20 rounded-md border bg-background px-2 text-sm text-center"
-                      />
+                      <div className="flex items-center justify-center gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          value={editForm.quantity}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, quantity: e.target.value }))}
+                          className="h-8 w-20 rounded-md border bg-background px-2 text-sm text-center"
+                        />
+                        <select
+                          value={editForm.quantityUnit}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, quantityUnit: e.target.value as QuantityUnit }))}
+                          className="h-8 rounded-md border bg-background px-2 text-xs"
+                        >
+                          {QUANTITY_UNITS.map((unit) => (
+                            <option key={unit} value={unit}>{unit}</option>
+                          ))}
+                        </select>
+                      </div>
                     ) : (
                       <span className={p.quantity <= 5 ? "font-semibold text-status-danger" : "text-card-foreground"}>
-                        {p.quantity}
+                        {p.quantity} {p.quantityUnit || "pcs"}
                       </span>
                     )}
                   </td>

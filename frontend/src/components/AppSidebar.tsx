@@ -1,4 +1,14 @@
-import { LayoutDashboard, PackagePlus, Bell, Moon, Sun, ShieldCheck, LogOut, User } from "lucide-react";
+import {
+  LayoutDashboard,
+  PackagePlus,
+  Bell,
+  Moon,
+  Sun,
+  ShieldCheck,
+  LogOut,
+  User,
+  ShoppingCart,
+} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -26,6 +36,7 @@ export function AppSidebar({ darkMode, toggleDarkMode }: AppSidebarProps) {
 
   const navItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard, show: true },
+    { title: "Orders", url: "/orders", icon: ShoppingCart, show: true },
     { title: "Add Product", url: "/add-product", icon: PackagePlus, show: user?.role === "shopkeeper" },
     { title: "Notifications", url: "/notifications", icon: Bell, show: true },
   ].filter((i) => i.show);

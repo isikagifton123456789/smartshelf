@@ -9,6 +9,7 @@ import AppLayout from "@/components/AppLayout";
 import DashboardRouter from "@/pages/DashboardRouter";
 import AddProduct from "@/pages/AddProduct";
 import Notifications from "@/pages/Notifications";
+import Orders from "@/pages/Orders";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -34,6 +35,7 @@ const App = () => (
                     <AppLayout>
                       <Routes>
                         <Route path="/" element={<DashboardRouter />} />
+                        <Route path="/orders" element={<Orders />} />
                         <Route path="/add-product" element={<ProtectedRoute allowedRoles={["shopkeeper"]}><AddProduct /></ProtectedRoute>} />
                         <Route path="/notifications" element={<Notifications />} />
                         <Route path="*" element={<NotFound />} />

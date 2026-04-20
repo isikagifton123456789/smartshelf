@@ -16,6 +16,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<boolean>;
   register: (name: string, email: string, password: string, role: UserRole, phoneNumber: string) => Promise<{ ok: boolean; message: string }>;
+  googleAuth: (credential: string, role: UserRole, phoneNumber?: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -91,10 +92,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const googleAuth = useCallback(async (credential: string, role: UserRole, phoneNumber?: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: credential, role, phoneNumber }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      setUser({ ...data.user, token: data.token });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const logout = useCallback(() => setUser(null), []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, googleAuth, logout }}>
       {children}
     </AuthContext.Provider>
   );
