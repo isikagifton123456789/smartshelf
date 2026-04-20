@@ -4,7 +4,6 @@ import {
   Bell,
   Moon,
   Sun,
-  ShieldCheck,
   LogOut,
   User,
   ShoppingCart,
@@ -51,7 +50,7 @@ export function AppSidebar({ darkMode, toggleDarkMode }: AppSidebarProps) {
       <SidebarContent className="flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2.5 px-4 py-5 border-b border-sidebar-border">
-            <ShieldCheck className="h-7 w-7 text-sidebar-primary shrink-0" />
+            <img src="/Logo.png" alt="SmartShelf logo" className="h-7 w-7 rounded-md object-contain shrink-0" />
             {!collapsed && (
               <span className="text-lg font-bold font-display text-sidebar-accent-foreground">SmartShelf</span>
             )}

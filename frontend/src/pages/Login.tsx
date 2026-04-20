@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn, ShieldCheck } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -55,7 +55,7 @@ export default function Login() {
       <div className="w-full max-w-md animate-fade-in">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
-            <ShieldCheck className="h-8 w-8 text-primary" />
+            <img src="/Logo.png" alt="SmartShelf logo" className="h-10 w-10 object-contain" />
           </div>
           <h1 className="text-2xl font-bold font-display text-foreground">Welcome to SmartShelf</h1>
           <p className="text-muted-foreground">Sign in to your account</p>
