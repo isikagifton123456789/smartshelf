@@ -1,17 +1,19 @@
 import express from "express";
 import { auth, db, serverTimestamp } from "../config/firebaseAdmin.js";
-import { sendPasswordResetEmail, signInWithEmailAndPassword, signUpWithEmailAndPassword } from "../services/firebaseAuthClient.js";
+import { signInWithEmailAndPassword, signUpWithEmailAndPassword } from "../services/firebaseAuthClient.js";
+import { sendForgotPasswordEmail, sendVerificationEmail } from "../services/mailer.js";
 
 const router = express.Router();
 
 const allowedRoles = new Set(["shopkeeper", "supplier"]);
+const actionContinueUrl = process.env.EMAIL_ACTION_CONTINUE_URL || "http://localhost:8080/login";
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, phoneNumber } = req.body;
 
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: "name, email, password and role are required" });
+    if (!name || !email || !password || !role || !phoneNumber) {
+      return res.status(400).json({ message: "name, email, password, role and phoneNumber are required" });
     }
 
     if (!allowedRoles.has(role)) {
@@ -20,6 +22,10 @@ router.post("/register", async (req, res) => {
 
     if (String(password).length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    if (!/^\+?[0-9]{7,15}$/.test(String(phoneNumber).trim())) {
+      return res.status(400).json({ message: "Invalid phone number format" });
     }
 
     const signUpResult = await signUpWithEmailAndPassword(String(email).trim(), String(password));
@@ -32,18 +38,34 @@ router.post("/register", async (req, res) => {
       name: String(name).trim(),
       email: String(email).trim().toLowerCase(),
       role,
+      phoneNumber: String(phoneNumber).trim(),
+      emailVerified: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
 
+    // Fire-and-forget email verification.
+    (async () => {
+      try {
+        const verifyLink = await auth.generateEmailVerificationLink(String(email).trim().toLowerCase(), {
+          url: actionContinueUrl,
+          handleCodeInApp: false,
+        });
+
+        await sendVerificationEmail({
+          to: String(email).trim().toLowerCase(),
+          name: String(name).trim(),
+          verifyLink,
+        });
+        console.log(`Verification email dispatch initiated for ${String(email).trim().toLowerCase()}`);
+      } catch (mailError) {
+        console.error("Verification email send failed in background:", mailError);
+      }
+    })();
+
     return res.status(201).json({
-      user: {
-        id: uid,
-        name: String(name).trim(),
-        email: String(email).trim().toLowerCase(),
-        role,
-      },
-      token: signUpResult.idToken,
+      message: "Account creation successful. Check your email to activate your account.",
+      requiresEmailVerification: true,
     });
   } catch (error) {
     if (error instanceof Error && error.message.includes("EMAIL_EXISTS")) {
@@ -78,6 +100,11 @@ router.post("/login", async (req, res) => {
 
     const signInResult = await signInWithEmailAndPassword(String(email).trim(), String(password));
     const decoded = await auth.verifyIdToken(signInResult.idToken);
+    const firebaseUser = await auth.getUser(decoded.uid);
+
+    if (!firebaseUser.emailVerified) {
+      return res.status(403).json({ message: "Please verify your email before logging in." });
+    }
 
     const profileSnap = await db.collection("users").doc(decoded.uid).get();
     const profile = profileSnap.exists ? profileSnap.data() : null;
@@ -88,12 +115,18 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ message: "Role mismatch" });
     }
 
+    await db.collection("users").doc(decoded.uid).set({
+      emailVerified: true,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+
     return res.json({
       user: {
         id: decoded.uid,
         name: profile?.name || decoded.name || "User",
         email: profile?.email || decoded.email,
         role: storedRole,
+        phoneNumber: profile?.phoneNumber || "",
       },
       token: signInResult.idToken,
     });
@@ -116,12 +149,20 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(400).json({ message: "email is required" });
     }
 
-    await sendPasswordResetEmail(String(email).trim());
-    return res.json({ message: "Password reset email sent" });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    await auth.getUserByEmail(normalizedEmail);
+
+    const resetLink = await auth.generatePasswordResetLink(normalizedEmail, {
+      url: actionContinueUrl,
+      handleCodeInApp: false,
+    });
+
+    await sendForgotPasswordEmail({ to: normalizedEmail, resetLink });
+    return res.json({ message: "Password reset email sent. Link expires in about 1 hour." });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
 
-    if (message.includes("EMAIL_NOT_FOUND")) {
+    if (message.includes("EMAIL_NOT_FOUND") || message.includes("auth/user-not-found")) {
       return res.status(404).json({ message: "No account found with this email" });
     }
 

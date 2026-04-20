@@ -7,6 +7,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  phoneNumber?: string;
   token: string;
 }
 
@@ -14,7 +15,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<boolean>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
+  register: (name: string, email: string, password: string, role: UserRole, phoneNumber: string) => Promise<{ ok: boolean; message: string }>;
   logout: () => void;
 }
 
@@ -56,23 +57,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
+  const register = useCallback(async (name: string, email: string, password: string, role: UserRole, phoneNumber: string): Promise<{ ok: boolean; message: string }> => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, password, role, phoneNumber }),
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        return false;
+        return {
+          ok: false,
+          message: data?.message || "Could not create account. Please try again.",
+        };
       }
 
-      const data = await response.json();
-      setUser({ ...data.user, token: data.token });
-      return true;
+      if (data?.token && data?.user) {
+        setUser({ ...data.user, token: data.token });
+      } else {
+        setUser(null);
+      }
+      return {
+        ok: true,
+        message: data?.message || "Account creation successful. Check your email to activate your account.",
+      };
     } catch {
-      return false;
+      return {
+        ok: false,
+        message: "Could not create account. Please try again.",
+      };
     }
   }, []);
 

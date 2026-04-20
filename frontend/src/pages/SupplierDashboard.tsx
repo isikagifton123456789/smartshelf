@@ -33,6 +33,7 @@ export default function SupplierDashboard() {
             <tr className="border-b bg-muted/50">
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Product</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Shop</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Phone</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
             </tr>
@@ -46,7 +47,8 @@ export default function SupplierDashboard() {
               return (
                 <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium text-card-foreground">{p.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">SmartShelf Store</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.createdByName || "SmartShelf Store"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.createdByPhone || "-"}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass}`}>{statusLabel}</span>
                   </td>

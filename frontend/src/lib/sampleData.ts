@@ -4,6 +4,8 @@ export interface Product {
   quantity: number;
   expiryDate: string;
   supplier: string;
+  createdByName?: string;
+  createdByPhone?: string;
 }
 
 const today = new Date();

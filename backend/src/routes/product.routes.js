@@ -16,6 +16,7 @@ async function getUserProfile(uid) {
     id: uid,
     name: String(data.name || ""),
     role: String(data.role || ""),
+    phoneNumber: String(data.phoneNumber || ""),
   };
 }
 
@@ -57,6 +58,11 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(400).json({ message: "name, quantity, expiryDate and supplier are required" });
     }
 
+    const profile = await getUserProfile(req.user.uid);
+    if (!profile) {
+      return res.status(403).json({ message: "User profile not found" });
+    }
+
     const payload = {
       name: String(name).trim(),
       quantity: Number(quantity),
@@ -64,6 +70,8 @@ router.post("/", requireAuth, async (req, res) => {
       supplier: String(supplier).trim(),
       supplierNormalized: normalizeText(supplier),
       createdBy: req.user.uid,
+      createdByName: profile.name,
+      createdByPhone: profile.phoneNumber,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({ name: "", email: "", phoneNumber: "", password: "", confirmPassword: "" });
   const [role, setRole] = useState<UserRole>("shopkeeper");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -15,6 +15,8 @@ export default function Register() {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = "Full name is required";
     if (!form.email.trim()) e.email = "Email is required";
+    if (!form.phoneNumber.trim()) e.phoneNumber = "Phone number is required";
+    if (form.phoneNumber.trim() && !/^\+?[0-9]{7,15}$/.test(form.phoneNumber.trim())) e.phoneNumber = "Invalid phone number";
     if (form.password.length < 6) e.password = "Password must be at least 6 characters";
     if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match";
     setErrors(e);
@@ -24,12 +26,12 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    const ok = await register(form.name.trim(), form.email.trim(), form.password, role);
-    if (ok) {
-      toast.success("Account created! Welcome to SmartShelf.");
-      navigate("/");
+    const result = await register(form.name.trim(), form.email.trim(), form.password, role, form.phoneNumber.trim());
+    if (result.ok) {
+      toast.success("Account creation successful. Check your email to activate your account.");
+      navigate("/login", { replace: true });
     } else {
-      toast.error("Could not create account. This email may already be in use.");
+      toast.error(result.message || "Could not create account. This email may already be in use.");
     }
   };
 
@@ -57,6 +59,11 @@ export default function Register() {
             <label className="mb-1.5 block text-sm font-medium text-card-foreground">Email</label>
             <input type="email" className={inputClass("email")} placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-card-foreground">Phone Number</label>
+            <input className={inputClass("phoneNumber")} placeholder="e.g. +254712345678" value={form.phoneNumber} onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })} />
+            {errors.phoneNumber && <p className="mt-1 text-xs text-destructive">{errors.phoneNumber}</p>}
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-card-foreground">Password</label>
